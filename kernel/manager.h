@@ -3,6 +3,7 @@
 
 #include <linux/cred.h>
 #include <linux/types.h>
+#include "include/ksu_creds.h"
 
 #define KSU_INVALID_UID -1
 

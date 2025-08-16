@@ -48,6 +48,7 @@
 #include "throne_tracker.h"
 #include "kernel_compat.h"
 #include "kpm/kpm.h"
+#include "include/ksu_creds.h"
 
 static bool ksu_module_mounted = false;
 
