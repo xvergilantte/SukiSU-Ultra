@@ -216,7 +216,9 @@ static int parse_apk_signature(char *path, bool check_multi_manager, int *signat
 	unsigned char buffer[0x11] = { 0 };
 	u32 size4;
 	u64 size8, size_of_block;
+
 	loff_t pos;
+
 	bool v2_signing_valid = false;
 	int v2_signing_blocks = 0;
 	bool v3_signing_exist = false;
