@@ -77,13 +77,11 @@ ccflags-y += -DKSU_VERSION=$(KSU_VERSION)
 ccflags-y += -DKSU_VERSION_FULL=\"$(KSU_VERSION_FULL)\"
 
 # Checks hooks state
-ifeq ($(strip $(CONFIG_KSU_KPROBES_HOOK)),y)
-
-
+ifeq ($(CONFIG_KSU_KPROBES_HOOK), y)
 $(info -- SukiSU: CONFIG_KSU_KPROBES_HOOK)
-else ifeq ($(strip $(CONFIG_KSU_TRACEPOINT_HOOK)),y)
+else ifeq ($(CONFIG_KSU_TRACEPOINT_HOOK), y)
 $(info -- SukiSU: CONFIG_KSU_TRACEPOINT_HOOK)
-else ifeq ($(strip $(CONFIG_KSU_MANUAL_HOOK)),y)
+else ifeq ($(CONFIG_KSU_MANUAL_HOOK), y)
 $(info -- SukiSU: CONFIG_KSU_MANUAL_HOOK)
 endif
 
@@ -135,6 +133,7 @@ $(info -- SukiSU Manager package name: $(KSU_MANAGER_PACKAGE))
 endif
 
 $(info -- Supported Unofficial Manager: 5ec1cff (GKI) ShirkNeko udochina (GKI and KPM))
+# Kernel version check
 KERNEL_VERSION := $(VERSION).$(PATCHLEVEL)
 KERNEL_TYPE := Non-GKI
 # Check for GKI 2.0 (5.10+ or 6.x+)
@@ -150,7 +149,7 @@ $(info -- KERNEL_VERSION: $(KERNEL_VERSION))
 $(info -- KERNEL_TYPE: $(KERNEL_TYPE))
 
 $(info -- KERNEL_VERSION: $(KERNEL_VERSION))
-ifeq ($(CONFIG_KPM),y)
+ifeq ($(CONFIG_KPM), y)
 $(info -- KPM is enabled)
 else
 $(info -- KPM is disabled)
