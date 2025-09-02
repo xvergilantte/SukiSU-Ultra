@@ -312,7 +312,6 @@ static int execve_handler_pre(struct kprobe *p, struct pt_regs *regs)
 					  NULL);
 }
 
-#ifdef MODULE
 static struct kprobe *su_kps[6];
 static int pts_unix98_lookup_pre(struct kprobe *p, struct pt_regs *regs)
 {
@@ -326,9 +325,6 @@ static int pts_unix98_lookup_pre(struct kprobe *p, struct pt_regs *regs)
 
 	return ksu_handle_devpts(inode);
 }
-#else
-static struct kprobe *su_kps[5];
-#endif
 
 static struct kprobe *init_kprobe(const char *name,
 				  kprobe_pre_handler_t handler)
