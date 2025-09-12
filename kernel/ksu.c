@@ -66,7 +66,7 @@ extern void ksu_trace_unregister();
 int __init kernelsu_init(void)
 {
 	pr_info("kernelsu.enabled=%d\n",
-		get_ksu_state());
+		(int)get_ksu_state());
 
 #ifdef CONFIG_KSU_CMDLINE
 	if (!get_ksu_state()) {
@@ -74,6 +74,7 @@ int __init kernelsu_init(void)
 		return 0;
 	}
 #endif
+
 #ifdef CONFIG_KSU_DEBUG
 	pr_alert("*************************************************************");
 	pr_alert("**     NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE    **");
@@ -101,7 +102,7 @@ int __init kernelsu_init(void)
 #ifdef CONFIG_KSU_KPROBES_HOOK
 	ksu_ksud_init();
 #else
-	pr_alert("KPROBES is disabled, KernelSU may not work, please check https://kernelsu.org/guide/how-to-integrate-for-non-gki.html");
+	pr_debug("init ksu driver\n");
 #endif
 
 #ifdef CONFIG_KSU_TRACEPOINT_HOOK

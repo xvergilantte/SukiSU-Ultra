@@ -79,7 +79,6 @@ void ksu_android_ns_fs_check(void)
 	task_unlock(current);
 }
 
-
 struct file *ksu_filp_open_compat(const char *filename, int flags, umode_t mode)
 {
 #if LINUX_VERSION_CODE < KERNEL_VERSION(4, 10, 0) ||	\
@@ -179,3 +178,33 @@ long ksu_strncpy_from_user_nofault(char *dst, const void __user *unsafe_addr,
 	return ret;
 }
 #endif
+
+long ksu_strncpy_from_user_retry(char *dst, const void __user *unsafe_addr,
+				   long count)
+{
+	long ret;
+
+	ret = ksu_strncpy_from_user_nofault(dst, unsafe_addr, count);
+	if (likely(ret >= 0))
+		return ret;
+
+	// we faulted! fallback to slow path
+	if (unlikely(!ksu_access_ok(unsafe_addr, count))) {
+#ifdef CONFIG_KSU_DEBUG
+		pr_err("%s: faulted!\n", __func__);
+#endif
+		return -EFAULT;
+	}
+
+	// why we don't do like how strncpy_from_user_nofault?
+	ret = strncpy_from_user(dst, unsafe_addr, count);
+
+	if (ret >= count) {
+		ret = count;
+		dst[ret - 1] = '\0';
+	} else if (likely(ret >= 0)) {
+		ret++;
+	}
+
+	return ret;
+}
