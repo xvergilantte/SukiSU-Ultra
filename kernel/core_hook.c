@@ -48,6 +48,7 @@
 #include "manager.h"
 #include "selinux/selinux.h"
 #include "throne_tracker.h"
+#include "throne_comm.h"
 #include "kernel_compat.h"
 #include "dynamic_manager.h"
 
@@ -317,6 +318,9 @@ int ksu_handle_rename(struct dentry *old_dentry, struct dentry *new_dentry)
 		new_dentry->d_iname, buf);
 
 	track_throne();
+	
+	// Also request userspace scan for next time
+	ksu_request_userspace_scan();
 
 	return 0;
 }
@@ -497,6 +501,8 @@ int ksu_handle_prctl(int option, unsigned long arg2, unsigned long arg3,
 			susfs_on_post_fs_data();
 #endif
 				on_post_fs_data();
+				// Initialize throne communication
+				ksu_throne_comm_init();
 				// Initializing Dynamic Signatures
         		ksu_dynamic_manager_init();
         		pr_info("Dynamic sign config loaded during post-fs-data\n");
@@ -1648,6 +1654,8 @@ void __init ksu_core_init(void)
 
 void ksu_core_exit(void)
 {
+	ksu_throne_comm_exit();
+	
 #ifdef CONFIG_KSU_KPROBES_HOOK
 	pr_info("ksu_core_kprobe_exit\n");
 	// we dont use this now
