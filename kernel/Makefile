@@ -3,7 +3,6 @@ kernelsu-objs += allowlist.o
 kernelsu-objs += dynamic_manager.o
 kernelsu-objs += apk_sign.o
 kernelsu-objs += sucompat.o
-kernelsu-objs += throne_tracker.o
 kernelsu-objs += core_hook.o
 kernelsu-objs += ksud.o
 kernelsu-objs += embed_ksud.o
@@ -12,6 +11,14 @@ kernelsu-objs += throne_comm.o
 
 ifeq ($(CONFIG_KSU_TRACEPOINT_HOOK), y)
 kernelsu-objs += ksu_trace.o
+endif
+
+ifeq ($(CONFIG_KSU_THRONE_TRACKER_LEGACY),y)
+$(info -- KernelSU/compat: using legacy throne tracker)
+kernelsu-objs += throne_tracker_legacy.o
+else
+$(info -- KernelSU/compat: using new throne tracker)
+kernelsu-objs += throne_tracker.o
 endif
 
 kernelsu-objs += selinux/selinux.o
