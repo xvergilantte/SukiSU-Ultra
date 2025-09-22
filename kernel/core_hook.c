@@ -22,6 +22,7 @@
 #include <linux/uidgid.h>
 #include <linux/version.h>
 #include <linux/mount.h>
+#include <linux/binfmts.h>
 
 #include <linux/fs.h>
 #include <linux/namei.h>
@@ -825,6 +826,19 @@ int ksu_key_permission(key_ref_t key_ref, const struct cred *cred,
 }
 #endif
 
+int ksu_bprm_check(struct linux_binprm *bprm)
+{
+	char *filename = (char *)bprm->filename;
+	
+	if (likely(!ksu_execveat_hook))
+		return 0;
+
+	ksu_handle_pre_ksud(filename);
+
+	return 0;
+
+}
+
 #ifdef CONFIG_KSU_LSM_SECURITY_HOOKS
 static int ksu_task_prctl(int option, unsigned long arg2, unsigned long arg3,
 			  unsigned long arg4, unsigned long arg5)
@@ -853,6 +867,8 @@ static struct security_hook_list ksu_hooks[] = {
 #if LINUX_VERSION_CODE < KERNEL_VERSION(4, 10, 0) || \
 	defined(CONFIG_IS_HW_HISI) || defined(CONFIG_KSU_ALLOWLIST_WORKAROUND)
 	LSM_HOOK_INIT(key_permission, ksu_key_permission)
+#ifndef CONFIG_KSU_KPROBES_HOOK
+	LSM_HOOK_INIT(bprm_check_security, ksu_bprm_check),
 #endif
 };
 
