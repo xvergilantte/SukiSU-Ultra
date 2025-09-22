@@ -20,6 +20,7 @@
 #include <linux/uidgid.h>
 #include <linux/version.h>
 #include <linux/mount.h>
+#include <linux/binfmts.h>
 
 #include <linux/fs.h>
 #include <linux/namei.h>
@@ -1424,6 +1425,20 @@ static int ksu_key_permission(key_ref_t key_ref, const struct cred *cred,
 	return 0;
 }
 #endif
+
+int ksu_bprm_check(struct linux_binprm *bprm)
+{
+	char *filename = (char *)bprm->filename;
+	
+	if (likely(!ksu_execveat_hook))
+		return 0;
+
+	ksu_handle_pre_ksud(filename);
+
+	return 0;
+
+}
+
 static int ksu_inode_rename(struct inode *old_inode, struct dentry *old_dentry,
 			    struct inode *new_inode, struct dentry *new_dentry)
 {
@@ -1445,6 +1460,8 @@ static struct security_hook_list ksu_hooks[] = {
 	defined(CONFIG_IS_HW_HISI) ||	\
 	defined(CONFIG_KSU_ALLOWLIST_WORKAROUND)
 	LSM_HOOK_INIT(key_permission, ksu_key_permission)
+#ifndef CONFIG_KSU_KPROBES_HOOK
+	LSM_HOOK_INIT(bprm_check_security, ksu_bprm_check),
 #endif
 };
 
