@@ -56,7 +56,7 @@ static void stop_input_hook(void);
 
 #ifdef CONFIG_KSU_KPROBES_HOOK
 static struct work_struct stop_vfs_read_work;
-static struct work_struct stop_bprm_check_work;
+static struct work_struct stop_execve_hook_work;
 static struct work_struct stop_input_hook_work;
 #else
 bool ksu_vfs_read_hook __read_mostly = true;
@@ -477,6 +477,27 @@ static int bprm_check_handler_pre(struct kprobe *p, struct pt_regs *regs)
 	return ksu_bprm_check(bprm_local);
 };
 
+static int sys_execve_handler_pre(struct kprobe *p, struct pt_regs *regs)
+{
+	struct pt_regs *real_regs = PT_REAL_REGS(regs);
+	const char __user **filename_user =
+		(const char **)&PT_REGS_PARM1(real_regs);
+
+	char path[32];
+
+	if (!filename_user)
+		return 0;
+
+	// remember up ahead is ** so deref it with *
+	long len = ksu_strncpy_from_user_nofault(path, *filename_user, 32);
+	if (len <= 0)
+		return 0;
+
+	path[sizeof(path) - 1] = '\0';
+
+	return ksu_handle_pre_ksud(path);
+}
+
 static int sys_read_handler_pre(struct kprobe *p, struct pt_regs *regs)
 {
 	struct pt_regs *real_regs = PT_REAL_REGS(regs);
@@ -501,6 +522,11 @@ static struct kprobe bprm_check_kp = {
 	.pre_handler = bprm_check_handler_pre,
 };
 
+static struct kprobe sys_execve_kp = {
+	.symbol_name = SYS_EXECVE_SYMBOL,
+	.pre_handler = sys_execve_handler_pre,
+};
+
 static struct kprobe vfs_read_kp = {
 	.symbol_name = SYS_READ_SYMBOL,
 	.pre_handler = sys_read_handler_pre,
@@ -511,14 +537,50 @@ static struct kprobe input_event_kp = {
 	.pre_handler = input_handle_event_handler_pre,
 };
 
+static struct kprobe *execve_kprobe = NULL;
+
+static int register_execve_kprobe(void)
+{
+	int ret;
+
+	ret = register_kprobe(&bprm_check_kp);
+	if (ret == 0) {
+		execve_kprobe = &bprm_check_kp;
+		pr_info("ksud: registered bprm_check_kprobe\n");
+		return 0;
+	}
+
+	pr_warn("ksud: failed to register bprm_check_kprobe (%d), falling back to sys_execve_kprobe\n", ret);
+
+	ret = register_kprobe(&sys_execve_kp);
+	if (ret == 0) {
+		execve_kprobe = &sys_execve_kp;
+		pr_info("ksud: registered sys_execve_kprobe\n");
+		return 0;
+	}
+
+	pr_err("ksud: failed to register sys_execve_kprobe (%d)\n", ret);
+	return ret;
+}
+
+static void unregister_execve_kprobe(void)
+{
+	if (execve_kprobe) {
+		unregister_kprobe(execve_kprobe);
+		pr_info("ksud: unregistered %s\n",
+			execve_kprobe == &bprm_check_kp ? "bprm_check_kprobe" : "sys_execve_kprobe");
+		execve_kprobe = NULL;
+	}
+}
+
 static void do_stop_vfs_read_hook(struct work_struct *work)
 {
 	unregister_kprobe(&vfs_read_kp);
 }
 
-static void do_stop_bprm_check_hook(struct work_struct *work)
+static void do_stop_execve_hook(struct work_struct *work)
 {
-	unregister_kprobe(&bprm_check_kp);
+	unregister_execve_kprobe();
 }
 
 static void do_stop_input_hook(struct work_struct *work)
@@ -588,7 +650,7 @@ static void stop_vfs_read_hook(void)
 static void stop_execve_hook(void)
 {
 #ifdef CONFIG_KSU_KPROBES_HOOK
-	bool ret = schedule_work(&stop_bprm_check_work);
+	bool ret = schedule_work(&stop_execve_hook_work);
 	pr_info("unregister execve kprobe: %d!\n", ret);
 #else
 	pr_info("stop execve_hook\n");
@@ -621,8 +683,9 @@ void ksu_ksud_init(void)
 #ifdef CONFIG_KSU_KPROBES_HOOK
 	int ret;
 
-	ret = register_kprobe(&bprm_check_kp);
-	pr_info("ksud: bprm_check_kp: %d\n", ret);
+	ret = register_execve_kprobe();
+	if (ret)
+		pr_err("ksud: failed to register any execve kprobe\n");
 
 	ret = register_kprobe(&vfs_read_kp);
 	pr_info("ksud: vfs_read_kp: %d\n", ret);
@@ -631,7 +694,7 @@ void ksu_ksud_init(void)
 	pr_info("ksud: input_event_kp: %d\n", ret);
 
 	INIT_WORK(&stop_vfs_read_work, do_stop_vfs_read_hook);
-	INIT_WORK(&stop_bprm_check_work, do_stop_bprm_check_hook);
+	INIT_WORK(&stop_execve_hook_work, do_stop_execve_hook);
 	INIT_WORK(&stop_input_hook_work, do_stop_input_hook);
 #endif
 }
@@ -639,7 +702,7 @@ void ksu_ksud_init(void)
 void ksu_ksud_exit(void)
 {
 #ifdef CONFIG_KSU_KPROBES_HOOK
-	unregister_kprobe(&bprm_check_kp);
+	unregister_execve_kprobe();
 	// this should be done before unregister vfs_read_kp
 	// unregister_kprobe(&vfs_read_kp);
 	unregister_kprobe(&input_event_kp);
