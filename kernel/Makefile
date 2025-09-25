@@ -189,7 +189,7 @@ $(eval SUSFS_VERSION=$(shell cat $(srctree)/include/linux/susfs.h | grep -E '^#d
 $(info )
 $(info -- SUSFS_VERSION: $(SUSFS_VERSION))
 else
-$(info -- You have not integrated susfs in your kernel yet.)
+$(info -- You have not integrate susfs in your kernel.)
 $(info -- Read: https://gitlab.com/simonpunk/susfs4ksu)
 endif
 
