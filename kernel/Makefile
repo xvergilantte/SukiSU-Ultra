@@ -122,9 +122,6 @@ ccflags-y += -DKSU_COMPAT_HAS_SELINUX_STATE
 endif
 
 # Handle optional backports
-ifeq ($(shell grep -q "strncpy_from_user_nofault" $(srctree)/include/linux/uaccess.h; echo $$?),0)
-ccflags-y += -DKSU_OPTIONAL_STRNCPY
-endif
 ifeq ($(shell grep -q "ssize_t kernel_read" $(srctree)/fs/read_write.c; echo $$?),0)
 ccflags-y += -DKSU_OPTIONAL_KERNEL_READ
 endif
