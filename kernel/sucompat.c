@@ -126,25 +126,8 @@ int ksu_handle_execve_sucompat(int *fd, const char __user **filename_user,
 			       void *__never_use_argv, void *__never_use_envp,
 			       int *__never_use_flags)
 {
-	char path[sizeof(su)];
-	
 	if (!is_su_allowed((const void *)filename_user))
 		return 0;
-
-	if (ksu_copy_from_user_retry(path, *filename_user, sizeof(path)) == 0) {
-		
-		path[sizeof(path) - 1] = '\0';
-		
-		if (memcmp(path, su, sizeof(su)) == 0) {
-			pr_info("do_execve_common su found\n");
-			
-			*filename_user = ksud_user_path();
-			
-			escape_to_root();
-			
-			return 0;
-		}
-	}
 
 	return ksu_sucompat_user_common(filename_user, "sys_execve", true);
 }
