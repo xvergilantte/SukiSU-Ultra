@@ -636,7 +636,7 @@ static int ksu_execve_ksud_common(const char __user *filename_user,
 	if (!filename_user)
 		return 0;
 
-	len = ksu_copy_from_user_retry(path, filename_user, 32);
+	len = ksu_strncpy_from_user_nofault(path, filename_user, 32);
 	if (len <= 0)
 		return 0;
 
