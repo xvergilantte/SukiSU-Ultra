@@ -7,6 +7,14 @@
 #include "ss/policydb.h"
 #include "linux/key.h"
 
+#if defined(CONFIG_X86)
+#define KCOMPAT_BARRIER() barrier_nospec()
+#elif defined(CONFIG_ARM) || defined(CONFIG_ARM64)
+#define KCOMPAT_BARRIER() isb() // arch/arm64/include/asm/barrier.h
+#else
+#define KCOMPAT_BARRIER() barrier() // well, compiler atleast.
+#endif
+
 /**
  * list_count_nodes - count the number of nodes in a list
  * @head: the head of the list
