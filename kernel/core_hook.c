@@ -327,8 +327,7 @@ skip_check:
 	if (KERNEL_SU_OPTION != option)
 		return 0;
 
-	// just continue old logic
-	bool from_root = !current_uid().val;
+	bool from_root = 0 == current_uid().val;
 	bool from_manager = is_manager();
 
 	if (!from_root && !from_manager) {
