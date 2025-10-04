@@ -295,36 +295,37 @@ static void init_uid_scanner(void)
 	}
 }
 
+static inline bool is_prctl_valid(int option)
+{
+	// do uid checks first before compare to 0xdeadbeef
+	if (is_allow_su()) {
+		if (option == KERNEL_SU_OPTION)
+			return true;
+	}
+	return false;
+}
+
 int ksu_handle_prctl(int option, unsigned long arg2, unsigned long arg3,
 		     unsigned long arg4, unsigned long arg5)
 {
 	// if success, we modify the arg5 as result!
 	u32 *result = (u32 *)arg5;
 	u32 reply_ok = KERNEL_SU_OPTION;
+	uid_t current_uid_val = current_uid().val;
 
 	// we can skip this check when a manager is crowned already
 	if (likely(ksu_is_manager_uid_valid()))
-		goto skip_check;
-
-	// this is mostly for that multiuser bs
-	// here we just let them suffer
-	uid_t current_uid_val = current_uid().val;
+		goto skip;
+		
 	uid_t manager_uid = ksu_get_manager_uid();
 	if (current_uid_val != manager_uid &&
 		current_uid_val % 100000 == manager_uid) {
 		ksu_set_manager_uid(current_uid_val);
 	}
 
-skip_check:
-	// yes this causes delay, but this keeps the delay consistent, which is what we want
-	// with a proper barrier for safety as the compiler and cpu might try to do something smart.
-	KCOMPAT_BARRIER();
-	if (!is_allow_su())
-		return 0;
-
-	// we move it after uid check here so they cannot
-	// compare 0xdeadbeef call to a non-0xdeadbeef call
-	if (KERNEL_SU_OPTION != option)
+skip:
+	kcompat_barrier();
+	if (!is_prctl_valid(option))
 		return 0;
 
 	bool from_root = 0 == current_uid().val;
