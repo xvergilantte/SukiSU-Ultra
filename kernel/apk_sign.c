@@ -35,6 +35,7 @@ static struct apk_sign_key {
     {EXPECTED_SIZE_5EC1CFF, EXPECTED_HASH_5EC1CFF}, // 5ec1cff/KernelSU
     {EXPECTED_SIZE_RSUNTK, EXPECTED_HASH_RSUNTK}, // rsuntk/KernelSU
     {EXPECTED_SIZE_NEKO, EXPECTED_HASH_NEKO}, // Neko/KernelSU
+    {EXPECTED_SIZE_SPOOF, EXPECTED_HASH_SPOOF}, // Spoofed Package
 #ifdef EXPECTED_SIZE
 	{EXPECTED_SIZE, EXPECTED_HASH}, // Custom
 #endif
